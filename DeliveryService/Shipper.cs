@@ -12,6 +12,8 @@ namespace DeliveryService
 {
     public class Shipper
     {
+        public delegate void ShippingCompleteDelegate(string message);
+        public event ShippingCompleteDelegate ShipProcessingComplete;
         public void ShipOrder(Order order)
         {
             this.doShipping(order);
@@ -44,6 +46,10 @@ namespace DeliveryService
             {
                 MessageDialog dlg = new MessageDialog(ex.Message, "Exception");
                 dlg.ShowAsync();
+            }
+            finally
+            {
+                this.ShipProcessingComplete?.Invoke($"Dispatch note generated for Order {order.OrderID}");
             }
         }
     }

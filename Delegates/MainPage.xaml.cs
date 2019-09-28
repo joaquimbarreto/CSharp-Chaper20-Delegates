@@ -16,6 +16,7 @@ using DataTypes;
 using AuditService;
 using DeliveryService;
 using Windows.UI.Popups;
+using CheckoutService;
 
 // The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
@@ -30,6 +31,7 @@ namespace Delegates
         private Order order = null;
         private Auditor auditor = null;
         private Shipper shipper = null;
+        private CheckoutController checkoutController = null;
 
         public MainPage()
         {
@@ -37,6 +39,11 @@ namespace Delegates
 
             this.auditor = new Auditor();
             this.shipper = new Shipper();
+            this.checkoutController = new CheckoutController();
+            this.checkoutController.CheckoutProcessing += this.auditor.AuditOrder;
+            this.checkoutController.CheckoutProcessing += this.shipper.ShipOrder;
+            this.auditor.AuditProcessingComplete += this.displayMessage;
+            this.shipper.ShipProcessingComplete += this.displayMessage;
         }
 
         private void MainPageLoaded(object sender, RoutedEventArgs e)
@@ -107,15 +114,7 @@ namespace Delegates
             try
             {
                 // Perform the checkout processing
-                if (this.requestPayment())
-                {
-                    this.auditor.AuditOrder(this.order);
-                    this.shipper.ShipOrder(this.order);
-                }
-
-                // Display a summary of the order
-                MessageDialog dlg = new MessageDialog($"Order {order.OrderID}, value {order.TotalValue:C}", "Order Placed");
-                dlg.ShowAsync();
+                this.checkoutController.StartCheckoutProcessing(this.order);
 
                 // Clear out the order details so the user can start again with a new order
                 this.order = new Order { Date = DateTime.Now, Items = new List<OrderItem>(), OrderID = Guid.NewGuid(), TotalValue = 0 };
@@ -131,13 +130,9 @@ namespace Delegates
             }
         }
 
-        private bool requestPayment()
+        private void displayMessage(string message)
         {
-            // Payment processing goes here
-
-            // Payment logic is not implemented in this example
-            // - simply return true to indicate payment has been received
-            return true;
+            this.messageBar.Text += $"{message}{Environment.NewLine}";
         }
     }
 }
